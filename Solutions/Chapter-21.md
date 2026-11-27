@@ -29,7 +29,14 @@ Define the objective as 95% of Basket operations completing within 300 ms. The b
 
 [The Lambda handler and SAM template](labs/pilot/) implement one read-only capability. Run `sam local start-api` there and request `/recommend?category=architecture`. Expect two product IDs. An unknown category returns an empty list. This deterministic pilot isolates the hosting choice from recommendation quality.
 
-Compare the same handler on a warm always-on service and on Lambda with identical requests. Report warm and cold p95, validated responses per 1,000 calls and cost per 1,000 including API gateway, compute and logs. Example planning calculation: 1,000 calls × 128 MiB × 100 ms = 12.5 GB-seconds plus 1,000 invocations; apply your region's rates. The always-on baseline uses allocated capacity × elapsed time. Use measured billable duration and observed failures for a deployment decision. No cloud bill or cold-start measurement is implied by local execution.
+For a local baseline, run `python3 Solutions/labs/bench/recommendation_pilot.py` from the repository root. The [benchmark](labs/bench/recommendation_pilot.py) checks the status and both recommendation IDs on each request. A sample run on macOS with Python 3.15 produced:
+
+| Local execution | Correct responses | p95 latency |
+|---|---:|---:|
+| Reuse one Python process | 1,000 / 1,000 | 0.002 ms |
+| Start a Python process for each request | 100 / 100 | 45.124 ms |
+
+Starting an interpreter increased latency for this small lookup. Both modes returned the expected recommendations. These timings cover local execution only. For the hosting decision, compare the same handler on a warm always-on service and on Lambda with identical requests. Report warm and cold p95, validated responses per 1,000 calls and cost per 1,000 including API gateway, compute and logs. Example planning calculation: 1,000 calls × 128 MiB × 100 ms = 12.5 GB-seconds plus 1,000 invocations; apply your region's rates. The always-on baseline uses allocated capacity × elapsed time. Use measured billable duration and observed failures for a deployment decision. No cloud bill or cold-start measurement is implied by local execution.
 
 ## 6. Extend the starter
 

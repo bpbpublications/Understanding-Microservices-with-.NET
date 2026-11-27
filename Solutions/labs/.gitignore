@@ -3,3 +3,4 @@
 **/*.db*
 **/TestResults/
 .vs/
+__pycache__/

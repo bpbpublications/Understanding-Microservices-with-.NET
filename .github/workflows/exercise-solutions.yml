@@ -19,6 +19,16 @@ jobs:
       - run: bash infra/audit-packages.sh
         working-directory: Solutions/labs
       - run: docker compose -f Solutions/labs/compose.yaml config --quiet
+      - name: Exercise Basket, Ordering, Payment and Inventory over HTTP
+        working-directory: Solutions/labs
+        run: |
+          docker compose build basket
+          docker compose up -d --no-build basket ordering payment inventory jaeger
+          curl -fsS --retry 20 --retry-all-errors --retry-delay 2 http://127.0.0.1:5181/work | jq -e '.service == "basket"'
+          curl -fsS http://127.0.0.1:5182/metrics | grep -F 'book_requests_total{outcome="ok"}'
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f Solutions/labs/compose.yaml logs --tail 50
       - uses: actions/upload-artifact@v4
         if: always()
         with:
