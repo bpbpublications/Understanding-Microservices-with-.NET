@@ -1,0 +1,96 @@
+{
+  "uid": "book-services",
+  "title": "Book exercises · Basket and Ordering",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate (requests/sec)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "book-prom"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(book_requests_total[1m]))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error rate (fraction)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "book-prom"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum by (job) (rate(book_requests_total{outcome=\"error\"}[1m])) or 0 * sum by (job) (rate(book_requests_total[1m]))) / sum by (job) (rate(book_requests_total[1m]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Basket p95 duration (seconds)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "book-prom"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(book_duration_seconds_bucket{job=\"basket\"}[5m])))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Basket latency budget burn (1 = budget pace)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "book-prom"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(1 - sum(rate(book_duration_seconds_bucket{job=\"basket\",le=\"0.3\"}[5m])) / sum(rate(book_duration_seconds_count{job=\"basket\"}[5m]))) / 0.05"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+name: Exercise solutions
+on:
+  push:
+    paths: ['Solutions/**', '.github/workflows/exercise-solutions.yml']
+  pull_request:
+    paths: ['Solutions/**', '.github/workflows/exercise-solutions.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - run: dotnet build Solutions/labs/Exercises.sln -c Release
+      - run: dotnet test Solutions/labs/Tests -c Release --no-build --logger "trx;LogFileName=exercises.trx"
+      - run: bash infra/audit-packages.sh
+        working-directory: Solutions/labs
+      - run: docker compose -f Solutions/labs/compose.yaml config --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
