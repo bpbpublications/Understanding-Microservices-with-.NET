@@ -1,0 +1,36 @@
+name: Exercise solutions
+on:
+  push:
+    paths: ['Solutions/**', '.github/workflows/exercise-solutions.yml']
+  pull_request:
+    paths: ['Solutions/**', '.github/workflows/exercise-solutions.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - run: dotnet build Solutions/labs/Exercises.sln -c Release
+      - run: dotnet test Solutions/labs/Tests -c Release --no-build --logger "trx;LogFileName=exercises.trx"
+      - run: bash infra/audit-packages.sh
+        working-directory: Solutions/labs
+      - run: docker compose -f Solutions/labs/compose.yaml config --quiet
+      - name: Exercise Basket, Ordering, Payment and Inventory over HTTP
+        working-directory: Solutions/labs
+        run: |
+          docker compose build basket
+          docker compose up -d --no-build basket ordering payment inventory jaeger
+          curl -fsS --retry 20 --retry-all-errors --retry-delay 2 http://127.0.0.1:5181/work | jq -e '.service == "basket"'
+          curl -fsS http://127.0.0.1:5182/metrics | grep -F 'book_requests_total{outcome="ok"}'
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f Solutions/labs/compose.yaml logs --tail 50
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'

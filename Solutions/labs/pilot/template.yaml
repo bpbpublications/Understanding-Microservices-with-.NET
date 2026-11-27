@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  Recommend:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.13
+      Handler: app.handler
+      CodeUri: .
+      Timeout: 3
+      MemorySize: 128
+      Events:
+        Api:
+          Type: HttpApi
+          Properties: { Path: /recommend, Method: GET }

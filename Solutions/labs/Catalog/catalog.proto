@@ -1,0 +1,6 @@
+syntax = "proto3";
+package catalog;
+option csharp_namespace = "Book.Catalog.Rpc";
+service Lookup { rpc Get (LookupRequest) returns (ProductReply); }
+message LookupRequest { int32 id = 1; }
+message ProductReply { int32 id = 1; string name = 2; int64 price_cents = 3; }

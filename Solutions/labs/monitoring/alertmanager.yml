@@ -1,0 +1,10 @@
+route:
+  receiver: lab-log
+  group_wait: 5s
+  group_interval: 15s
+  repeat_interval: 1h
+receivers:
+  - name: lab-log
+    webhook_configs:
+      - url: http://catalog:8080/alerts
+        send_resolved: true

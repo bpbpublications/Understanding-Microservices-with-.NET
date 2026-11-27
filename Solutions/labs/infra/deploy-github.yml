@@ -1,0 +1,36 @@
+# Optional lab example. Install in .github/workflows only in a repository you deploy from.
+name: Deploy book lab
+on: workflow_dispatch
+permissions: { contents: read }
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - run: dotnet test Solutions/labs/Tests -c Release
+      - run: dotnet publish Solutions/labs/Observability -c Release -o publish
+      - uses: actions/upload-artifact@v4
+        with: { name: app, path: publish }
+  deploy:
+    needs: verify
+    environment: book-lab
+    permissions: { contents: read, id-token: write }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: app, path: publish }
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/webapps-deploy@v3
+        with: { app-name: '${{ vars.AZURE_APP }}', slot-name: staging, package: publish }
+      - name: Check staging and swap
+        env: { APP: '${{ vars.AZURE_APP }}', RG: '${{ vars.AZURE_RG }}' }
+        run: |
+          set -eu
+          curl -fsS --retry 15 --retry-all-errors "https://$APP-staging.azurewebsites.net/health"
+          az webapp deployment slot swap -g "$RG" -n "$APP" --slot staging --target-slot production

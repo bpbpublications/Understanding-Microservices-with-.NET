@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: basket }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: basket } }
+  template:
+    metadata: { labels: { app: basket } }
+    spec:
+      containers:
+        - name: api
+          image: book-observability:local
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - { name: Role, value: basket }
+            - { name: CpuMs, value: "25" }
+          readinessProbe: { httpGet: { path: /health, port: http } }
+          resources: { requests: { cpu: 100m, memory: 96Mi }, limits: { cpu: 500m, memory: 256Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: basket }
+spec:
+  selector: { app: basket }
+  ports: [{ port: 80, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ordering }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: ordering } }
+  template:
+    metadata: { labels: { app: ordering } }
+    spec:
+      containers:
+        - name: api
+          image: book-observability:local
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - { name: Role, value: ordering }
+            - { name: CpuMs, value: "25" }
+            - name: ConnectionStrings__Orders
+              valueFrom: { secretKeyRef: { name: ordering-db, key: connection } }
+          readinessProbe: { httpGet: { path: /health, port: http } }
+          resources: { requests: { cpu: 100m, memory: 96Mi }, limits: { cpu: 500m, memory: 256Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: ordering }
+spec:
+  selector: { app: ordering }
+  ports: [{ port: 80, targetPort: http }]
